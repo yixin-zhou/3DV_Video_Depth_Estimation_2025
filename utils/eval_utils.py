@@ -1,4 +1,5 @@
 import numpy as np
+from timm.models.swin_transformer_v2 import swinv2_large_window12_192
 
 # Copy from Sintel Depth Dataset official I/O Python codes
 # Check for endianness, based on Daniel Scharstein's optical flow code.
@@ -39,7 +40,26 @@ def cam2txt(cam_filepath, output_path, baseline=0.1, verbose=True):
 
     return {'M': M, 'N':N, 'baseline':baseline}
 
-print(1)
+
+class Eval_Metrics:
+    def __init__(self, mode, **kwargs):
+        assert mode in ['image', 'video'], "mode must be 'image' or 'video'"
+        self.mode = mode
+
+        if mode == 'image':
+            self.gt_depth = kwargs.get('gt_depth')
+            self.pred_depth = kwargs.get('pred_depth')
+
+        if mode == 'video':
+            self.pred_depth_seq = kwargs.get('pred_depth_seq')
+            self.gt_depth_seq = kwargs.get('gt_depth_seq')
+            self.cam_poses = kwargs.get('cam_poses')
+            self.intrinsics = kwargs.get('intrinsics')
+            self.baseline = kwargs.get('baseline')
+
+
+
+
 
 
 
