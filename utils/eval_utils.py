@@ -1,11 +1,25 @@
 import numpy as np
-from timm.models.swin_transformer_v2 import swinv2_large_window12_192
+import random
+import os
+import torch
+
 
 # Copy from Sintel Depth Dataset official I/O Python codes
 # Check for endianness, based on Daniel Scharstein's optical flow code.
 # Using little-endian architecture, these two should be equal.
 TAG_FLOAT = 202021.25
 TAG_CHAR = 'PIEH'
+
+
+# https://github.com/qhd1996/seed-everything
+def seed(TORCH_SEED):
+    random.seed(TORCH_SEED)
+    os.environ['PYTHONHASHSEED'] = str(TORCH_SEED)
+    np.random.seed(TORCH_SEED)
+    torch.manual_seed(TORCH_SEED)
+    torch.cuda.manual_seed_all(TORCH_SEED)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def cam2txt(cam_filepath, output_path, baseline=0.1, verbose=True):
