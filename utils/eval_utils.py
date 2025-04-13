@@ -11,7 +11,7 @@ TAG_FLOAT = 202021.25
 TAG_CHAR = 'PIEH'
 
 
-# https://github.com/qhd1996/seed-everything
+# Copy from https://github.com/qhd1996/seed-everything
 def seed(TORCH_SEED):
     random.seed(TORCH_SEED)
     os.environ['PYTHONHASHSEED'] = str(TORCH_SEED)
@@ -63,6 +63,8 @@ class Eval_Metrics:
         if mode == 'image':
             self.gt_depth = kwargs.get('gt_depth')
             self.pred_depth = kwargs.get('pred_depth')
+            assert len(self.pred_depth.shape) == 3, "The length of pred_depth should be 3, [B, H, W]"
+            assert self.gt_depth.shape == self.pred_depth.shape, "The shape of gt_depth and pred_depth is different."
 
         if mode == 'video':
             self.pred_depth_seq = kwargs.get('pred_depth_seq')
@@ -70,9 +72,101 @@ class Eval_Metrics:
             self.cam_poses = kwargs.get('cam_poses')
             self.intrinsics = kwargs.get('intrinsics')
             self.baseline = kwargs.get('baseline')
+            assert len(self.pred_depth_seq.shape) == 4, "The length of pred_depth_seq should be 4, [Batch_size, Frames, H, W]"
+            assert self.pred_depth_seq.shape == self.gt_depth_seq.shape, "The shape of gt_depth_seq and pred_depth_seq is different."
+
+    def abs_relative_difference(self, valid_mask=None):
+        '''
+        Function:
+            Compute the Absolute Relative Error (AbsRel) metric.
+            Supports both image mode ([B, H, W]) and video mode ([B, N, H, W]).
+
+        :param valid_mask: (optional) A boolean mask indicating valid pixels.
+
+        :return:
+            torch.Tensor: Scalar mean AbsRel over all valid pixels in the batch or sequence.
+        '''
+        if self.mode == 'image':
+            pred = self.pred_depth
+            gt = self.gt_depth
+        else:
+            pred = self.pred_depth_seq
+            gt = self.gt_depth_seq
+
+        abs_relative_diff = torch.abs(pred - gt) / gt
+        if valid_mask is not None:
+            abs_relative_diff[~valid_mask] = 0
+            n = valid_mask.sum(dim=(-1, -2))
+        else:
+            n = torch.tensor(pred.shape[-1] * pred.shape[-2], device=pred.device)
+
+        abs_relative_diff = torch.sum(abs_relative_diff, dim=(-1, -2)) / n
+        return abs_relative_diff.mean()
 
 
+    def root_mean_squared_error(self, valid_mask=None):
+        '''
+        Function:
+            Compute the Root Mean Squared Error (RMSE) metric.
+            Supports both image mode ([B, H, W]) and video mode ([B, N, H, W]).
 
+        :param valid_mask: (optional) A boolean mask indicating valid pixels.
+
+        :return:
+            torch.Tensor: Scalar mean RMSE over all valid pixels in the batch or sequence.
+        '''
+        if self.mode == 'image':
+            pred = self.pred_depth
+            gt = self.gt_depth
+        else:
+            pred = self.pred_depth_seq
+            gt = self.gt_depth_seq
+
+        squared_error = (pred - gt) ** 2
+
+        if valid_mask is not None:
+            squared_error[~valid_mask] = 0
+            n = valid_mask.sum(dim=(-1, -2))  # Shape: [B] or [B, N]
+        else:
+            n = torch.tensor(pred.shape[-1] * pred.shape[-2], device=pred.device)
+
+        mse = torch.sum(squared_error, dim=(-1, -2)) / n  # Mean squared error per image/frame
+        rmse = torch.sqrt(mse)  # Take square root for RMSE
+
+        return rmse.mean()
+
+    def delta(self, valid_mask=None, threshold=1.25):
+        '''
+        Function:
+            Compute the δ accuracy metric (δ1, δ2, or δ3 depending on the threshold).
+
+        :param valid_mask: (optional) A boolean mask indicating valid pixels.
+        :param threshold: threshold value for δ metric. Default is 1.25 (δ1).
+        :return:
+            Scalar accuracy (between 0 and 1), indicating the proportion of pixels
+        '''
+        if self.mode == 'image':
+            pred = self.pred_depth  # [B, H, W]
+            gt = self.gt_depth
+        else:
+            pred = self.pred_depth_seq  # [B, N, H, W]
+            gt = self.gt_depth_seq
+
+        ratio = torch.max(pred / gt, gt / pred)
+        if valid_mask is not None:
+            ratio = ratio[valid_mask]
+        delta1 = (ratio < threshold).float().mean()
+
+        return delta1
+
+    def dispaity_EPE(self):
+        return 0
+
+    def disparity_D1(self):
+        return 0
+
+    def disparity_BP(self):
+        return 0
 
 
 
