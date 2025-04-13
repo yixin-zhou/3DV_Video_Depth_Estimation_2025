@@ -55,7 +55,7 @@ def cam2txt(cam_filepath, output_path, baseline=0.1, verbose=True):
     return {'M': M, 'N':N, 'baseline':baseline}
 
 
-class Eval_Metrics:
+class Eval_Depth_Metrics:
     def __init__(self, mode, **kwargs):
         assert mode in ['image', 'video'], "mode must be 'image' or 'video'"
         self.mode = mode
@@ -159,14 +159,8 @@ class Eval_Metrics:
 
         return delta1
 
-    def dispaity_EPE(self):
-        return 0
 
-    def disparity_D1(self):
-        return 0
 
-    def disparity_BP(self):
-        return 0
 
 
 
