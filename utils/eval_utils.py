@@ -55,6 +55,10 @@ def cam2txt(cam_filepath, output_path, baseline=0.1, verbose=True):
     return {'M': M, 'N':N, 'baseline':baseline}
 
 
+def disparity2depth(disparity):
+    return 0
+
+
 class Eval_Depth_Metrics:
     def __init__(self, mode, **kwargs):
         assert mode in ['image', 'video'], "mode must be 'image' or 'video'"
@@ -159,9 +163,83 @@ class Eval_Depth_Metrics:
 
         return delta1
 
+    def tae(self):
+        return 0
 
 
+class Eval_Disparity_Metrics:
+    def __init__(self, mode, **kwargs):
+        assert mode in ['image', 'video'], "mode must be 'image' or 'video'"
+        self.mode = mode
 
+        if mode == 'image':
+            self.gt_disparity = kwargs.get('gt_disparity')
+            self.pred_disparity = kwargs.get('pred_disparity')
+            assert len(self.pred_disparity.shape) == 3, "The length of pred_disparity should be 3, [B, H, W]"
+            assert self.gt_disparity.shape == self.pred_disparity.shape, "The shape of gt_disparity and pred_disparity is different."
 
+        if mode == 'video':
+            self.pred_disparity_seq = kwargs.get('pred_disparity_seq')
+            self.gt_disparity_seq = kwargs.get('gt_disparity_seq')
+            self.cam_poses = kwargs.get('cam_poses')
+            self.intrinsics = kwargs.get('intrinsics')
+            self.baseline = kwargs.get('baseline')
+            assert len(
+                self.pred_disparity_seq.shape) == 4, "The length of pred_disparity_seq should be 4, [Batch_size, Frames, H, W]"
+            assert self.pred_disparity_seq.shape == self.gt_disparity_seq.shape, "The shape of gt_disparity_seq and pred_disparity_seq is different."
 
+    def end_point_error(self, valid_mask=None):
+        if self.mode == 'image':
+            pred = self.pred_disparity  # [B, H, W]
+            gt = self.gt_disparity
+        else:
+            pred = self.pred_disparity_seq  # [B, N, H, W]
+            gt = self.gt_disparity_seq
 
+        diff = torch.abs(pred -gt)
+
+        if valid_mask is not None:
+            diff[~valid_mask] = 0
+            n = valid_mask.sum(dim=(-1, -2))  # Shape: [B] or [B, N]
+        else:
+            n = torch.tensor(pred.shape[-1] * pred.shape[-2], device=pred.device)
+
+        epe = (torch.sum(diff, dim=(-1, -2)) / n).mean()
+        return epe
+
+    def D1(self, valid_mask=None):
+        if self.mode == 'image':
+            pred = self.pred_disparity  # [B, H, W]
+            gt = self.gt_disparity
+        else:
+            pred = self.pred_disparity_seq  # [B, N, H, W]
+            gt = self.gt_disparity_seq
+
+        diff = torch.abs(pred -gt)
+        bad = (diff > 3.0) & (diff > 0.05 * gt)
+
+        if valid_mask is not None:
+            bad = bad & valid_mask
+
+        d1 = bad.float().mean()
+        return d1
+
+    def bad_pixel_x(self, threshold, valid_mask=None):
+        if self.mode == 'image':
+            pred = self.pred_disparity  # [B, H, W]
+            gt = self.gt_disparity
+        else:
+            pred = self.pred_disparity_seq  # [B, N, H, W]
+            gt = self.gt_disparity_seq
+
+        diff = torch.abs(pred - gt)
+        bad_pixel = diff > threshold
+
+        if valid_mask is not None:
+            bad_pixel = bad_pixel & valid_mask
+
+        bpx = bad_pixel.float().mean()
+        return bpx
+
+    def tepe(self):
+        return 0
