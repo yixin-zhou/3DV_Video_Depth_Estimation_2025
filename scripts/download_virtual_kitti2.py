@@ -58,9 +58,10 @@ if __name__ == '__main__':
                   }
 
     # Download Virtual KITTI2 RGB and depth dataset and extract them
-    for content_type in ['rgb', 'depth', 'textgt']:
+    for content_type in ['textgt']:
         vktti_url = f'https://download.europe.naverlabs.com//virtual_kitti_2.0.3/vkitti_2.0.3_{content_type}.tar'
-
+        if content_type == 'textgt':
+            vktti_url = vktti_url + '.gz'
         download_extract_delete(url=vktti_url,
                                 save_path=os.path.join(dataset_path, f'vkitti_2.0.3_{content_type}.tar'),
                                 desc=f'Downloading vkitti_2.0.3_{content_type}.tar')
@@ -103,7 +104,7 @@ if __name__ == '__main__':
                         os.makedirs(disp_dir, exist_ok=True)
                         depth_maps_path = [os.path.join(depth_dir, depth_map_path)
                                            for depth_map_path in natsorted(os.listdir(depth_dir))]
-                        for path in tqdm(depth_maps_path, desc=f'Transferring the depth map to disparity'):
+                        for path in depth_maps_path:
                             depth = cv2.imread(path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
                             depth_meter = depth / 100
                             disparity = (fx * BASELINE) / depth_meter
