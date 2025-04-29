@@ -1,32 +1,14 @@
 import os
 import numpy as np
-import requests
-from tqdm import tqdm
 import tarfile
 import shutil
 from natsort import natsorted
 import cv2
 from tqdm import tqdm
+from utils.Utils import download_url
 
 BASELINE = 0.532725
 fx = 725.0087
-
-
-def download_url(url, save_path, desc):
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    response = requests.get(url, stream=True)
-    total_size = int(response.headers.get('content-length', 0))
-    block_size = 1024
-    progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True, desc=desc)
-
-    with open(save_path, 'wb') as f:
-        for data in response.iter_content(block_size):
-            progress_bar.update(len(data))
-            f.write(data)
-    progress_bar.close()
-
-    if total_size != 0 and progress_bar.n != total_size:
-        raise ValueError("WARNING: Downloaded size does not match expected size!")
 
 
 def extract_tar(tar_filepath, extract_path):

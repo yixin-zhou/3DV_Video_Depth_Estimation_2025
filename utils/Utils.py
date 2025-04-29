@@ -1,10 +1,31 @@
 import numpy as np
+import os
+import requests
+from tqdm import tqdm
+
 
 # Copy from Sintel Depth Dataset official I/O Python codes
 # Check for endianness, based on Daniel Scharstein's optical flow code.
 # Using little-endian architecture, these two should be equal.
 TAG_FLOAT = 202021.25
 TAG_CHAR = 'PIEH'
+
+
+def download_url(url, save_path, desc):
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    response = requests.get(url, stream=True)
+    total_size = int(response.headers.get('content-length', 0))
+    block_size = 1024
+    progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True, desc=desc)
+
+    with open(save_path, 'wb') as f:
+        for data in response.iter_content(block_size):
+            progress_bar.update(len(data))
+            f.write(data)
+    progress_bar.close()
+
+    if total_size != 0 and progress_bar.n != total_size:
+        raise ValueError("WARNING: Downloaded size does not match expected size!")
 
 
 def cam2txt(cam_filepath, output_path, baseline=0.1, verbose=True):
