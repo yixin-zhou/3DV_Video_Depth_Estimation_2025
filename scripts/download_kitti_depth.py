@@ -1,6 +1,7 @@
 import zipfile
 import os
 from utils.Utils import download_url
+from natsort import natsorted
 
 test_sequences = ["2011_09_26_drive_0002",
                   "2011_09_26_drive_0005",
@@ -20,18 +21,32 @@ test_sequences = ["2011_09_26_drive_0002",
 save_dir = '../datasets/'
 depth_annotated_dir = os.path.join(save_dir, 'data_depth_annotated.zip')
 
-depth_annotated_url = "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_depth_annotated.zip"
-download_url(depth_annotated_url, save_path=depth_annotated_dir, desc='Downloading KITTI Depth Prediction Dataset')
+base_url = 'https://s3.eu-central-1.amazonaws.com/avg-kitti/'
+depth_annotated_url = base_url + "data_depth_annotated.zip"
+# download_url(depth_annotated_url, save_path=depth_annotated_dir, desc='Downloading KITTI Depth Prediction Dataset')
 
-print(f"Unzipping {depth_annotated_dir}")
-with zipfile.ZipFile(depth_annotated_dir, 'r') as zip_ref:
-    zip_ref.extractall(depth_annotated_dir.replace('.zip', ''))
-
-os.remove(depth_annotated_dir)
+# print(f"Unzipping {depth_annotated_dir}")
+# with zipfile.ZipFile(depth_annotated_dir, 'r') as zip_ref:
+#     zip_ref.extractall(depth_annotated_dir.replace('.zip', ''))
+#
+# os.remove(depth_annotated_dir)
 
 sequences = {}
 for split in ['train', 'val']:
     split_dir = os.path.join(depth_annotated_dir.replace('.zip', ''), split)
-    sequences[split] = os.listdir(split_dir)
+    sequences[split] = natsorted(os.listdir(split_dir))
 
-# for key, items in sequences:
+raw_kitti_dir = os.path.join(save_dir, 'raw_kitti')
+for key, items in sequences.items():
+    for item in items:
+        sequence_url = base_url + 'raw_data/' + item.replace('_sync', '') + '/' + item + '.zip'
+        if item.replace('_sync', '') in test_sequences:
+            sequence_save_dir = os.path.join(raw_kitti_dir, 'test', item + '.zip')
+        else:
+            sequence_save_dir = os.path.join(raw_kitti_dir, split, item + '.zip')
+        download_url(sequence_url, save_path=sequence_save_dir, desc=f'Downloading {item}')
+
+        with zipfile.ZipFile(os.path.join(sequence_save_dir), 'r') as zip_ref:
+            zip_ref.extractall(sequence_save_dir.replace('.zip', ''))
+        os.remove(sequence_save_dir)
+
