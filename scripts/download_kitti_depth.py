@@ -23,22 +23,26 @@ depth_annotated_dir = os.path.join(save_dir, 'data_depth_annotated.zip')
 
 base_url = 'https://s3.eu-central-1.amazonaws.com/avg-kitti/'
 depth_annotated_url = base_url + "data_depth_annotated.zip"
-# download_url(depth_annotated_url, save_path=depth_annotated_dir, desc='Downloading KITTI Depth Prediction Dataset')
+download_url(depth_annotated_url, save_path=depth_annotated_dir, desc='Downloading KITTI Depth Prediction Dataset')
 
-# print(f"Unzipping {depth_annotated_dir}")
-# with zipfile.ZipFile(depth_annotated_dir, 'r') as zip_ref:
-#     zip_ref.extractall(depth_annotated_dir.replace('.zip', ''))
-#
-# os.remove(depth_annotated_dir)
+print(f"Unzipping {depth_annotated_dir}")
+with zipfile.ZipFile(depth_annotated_dir, 'r') as zip_ref:
+    zip_ref.extractall(depth_annotated_dir.replace('.zip', ''))
+
+os.remove(depth_annotated_dir)
 
 sequences = {}
 for split in ['train', 'val']:
     split_dir = os.path.join(depth_annotated_dir.replace('.zip', ''), split)
     sequences[split] = natsorted(os.listdir(split_dir))
 
+total_sequence_num = len(sequences['train']) + len(sequences['val'])
+num = 1
+
 raw_kitti_dir = os.path.join(save_dir, 'raw_kitti')
 for key, items in sequences.items():
     for item in items:
+        print(f'Download Sequence {item}: {num}/{total_sequence_num}')
         sequence_url = base_url + 'raw_data/' + item.replace('_sync', '') + '/' + item + '.zip'
         if item.replace('_sync', '') in test_sequences:
             sequence_save_dir = os.path.join(raw_kitti_dir, 'test', item + '.zip')
@@ -49,4 +53,4 @@ for key, items in sequences.items():
         with zipfile.ZipFile(os.path.join(sequence_save_dir), 'r') as zip_ref:
             zip_ref.extractall(sequence_save_dir.replace('.zip', ''))
         os.remove(sequence_save_dir)
-
+        num += 1
