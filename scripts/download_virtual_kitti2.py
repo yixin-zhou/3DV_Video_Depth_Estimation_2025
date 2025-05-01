@@ -28,6 +28,7 @@ def download_extract_delete(url, save_path, desc):
 
 
 if __name__ == '__main__':
+    transfer = False
     dataset_path = '../datasets/'
 
     scene_name = ['clone', '15-deg-left', '15-deg-right', '30-deg-left', '30-deg-right', 'fog', 'morning', 'overcast',
@@ -74,25 +75,27 @@ if __name__ == '__main__':
 
     vktti_dir = os.path.join(dataset_path, 'vktti_2.0.3')
     print(f'Merge rgb, depth and textgt(intrinsic.txt and extrinsic.txt) to {vktti_dir}')
+    print('Download Virtual KITTI2 Dataset Done')
 
-    with tqdm(total=120, desc='Transferring depth maps to disparities') as pbar:
-        for key, item in scene_list.items():
-            for split in ['train', 'test']:
-                scenes = item[split]
-                for scene in scenes:
-                    for cam in ['Camera_0', 'Camera_1']:
-                        depth_dir = os.path.join(vktti_dir, split, 'Scene' + key, scene, 'depth', cam)
-                        disp_dir = os.path.join(vktti_dir, split, 'Scene' + key, scene, 'disparity', cam)
-                        os.makedirs(disp_dir, exist_ok=True)
-                        depth_maps_path = [os.path.join(depth_dir, depth_map_path)
-                                           for depth_map_path in natsorted(os.listdir(depth_dir))]
-                        for path in depth_maps_path:
-                            depth = cv2.imread(path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
-                            depth_meter = depth / 100
-                            disparity = (fx * BASELINE) / depth_meter
+    if transfer:
+        with tqdm(total=120, desc='Transferring depth maps to disparities') as pbar:
+            for key, item in scene_list.items():
+                for split in ['train', 'test']:
+                    scenes = item[split]
+                    for scene in scenes:
+                        for cam in ['Camera_0', 'Camera_1']:
+                            depth_dir = os.path.join(vktti_dir, split, 'Scene' + key, scene, 'depth', cam)
+                            disp_dir = os.path.join(vktti_dir, split, 'Scene' + key, scene, 'disparity', cam)
+                            os.makedirs(disp_dir, exist_ok=True)
+                            depth_maps_path = [os.path.join(depth_dir, depth_map_path)
+                                               for depth_map_path in natsorted(os.listdir(depth_dir))]
+                            for path in depth_maps_path:
+                                depth = cv2.imread(path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+                                depth_meter = depth / 100
+                                disparity = (fx * BASELINE) / depth_meter
 
-                            filename = os.path.basename(path).replace('depth', 'disparity').replace('.png', '.npy')
-                            np.savez_compressed(os.path.join(disp_dir, filename), disparity=disparity)
-                        pbar.update(1)
+                                filename = os.path.basename(path).replace('depth', 'disparity').replace('.png', '.npy')
+                                np.savez_compressed(os.path.join(disp_dir, filename), disparity=disparity)
+                            pbar.update(1)
 
-    print('Depth maps transferring done')
+        print('Depth maps transferring done')

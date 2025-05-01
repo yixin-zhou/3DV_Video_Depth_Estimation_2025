@@ -14,4 +14,4 @@ with zipfile.ZipFile(save_path, 'r') as zip_ref:
 
 os.remove(save_path)
 
-print(f'Successfully download Sintel Dataset to {extract_path}')
+print(f'Download Sintel Dataset Done')
