@@ -65,5 +65,5 @@ def images2videos(images_dir, video_savepath, fps=15, verbose=False):
 if __name__ == '__main__':
     depth = np.load('../FoundationStereo/datasets/demo/temporal_consistency_demo/output/frame_5/depth_meter.npy')
     viz_disparity(depth, show=False, save_path='test.png')
-    # path = '../datasets/raw_kitti/val/2011_09_26_drive_0001_sync/2011_09_26/2011_09_26_drive_0001_sync/image_02/data'
+    # path = '../data/raw_kitti/val/2011_09_26_drive_0001_sync/2011_09_26/2011_09_26_drive_0001_sync/image_02/data'
     # images2videos(images_dir=path, video_savepath='../test.gif')

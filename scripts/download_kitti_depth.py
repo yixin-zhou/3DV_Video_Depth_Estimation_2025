@@ -19,7 +19,7 @@ test_sequences = ["2011_09_26_drive_0002",
                   ]
 calib_files = ['2011_09_26_calib.zip', '2011_09_28_calib.zip', '2011_09_29_calib.zip', '2011_10_03_calib.zip']
 
-save_dir = '../datasets/'
+save_dir = '../data/'
 depth_annotated_dir = os.path.join(save_dir, 'data_depth_annotated.zip')
 
 # Download KITTI Depth Prediction Dataset

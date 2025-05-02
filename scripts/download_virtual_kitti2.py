@@ -29,7 +29,7 @@ def download_extract_delete(url, save_path, desc):
 
 if __name__ == '__main__':
     transfer = False
-    dataset_path = '../datasets/'
+    dataset_path = '../data/'
 
     scene_name = ['clone', '15-deg-left', '15-deg-right', '30-deg-left', '30-deg-right', 'fog', 'morning', 'overcast',
                   'rain', 'sunset']
