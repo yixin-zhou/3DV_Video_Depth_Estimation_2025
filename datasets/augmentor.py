@@ -29,14 +29,14 @@ class VideoSeqAugmentor:
                  crop_size,
                  saturation_range=[0.6, 1.4],
                  gamma_params=[0.8, 1.4, 1.0, 1.2],
-                 bounds=[30, 60],
+                 bounds=[20, 60],
                  max_scale=0.5,
                  min_scale=-0.2):
 
         # Probability of different augmentation method
-        self.prob_eraser_aug = 0.4
+        self.prob_eraser_aug = 0.3
         self.prob_flip_aug = 0.5
-        self.prob_resize = 0.6
+        self.prob_resize = 0.7
         self.prob_asymmetric_color_aug = 0.2
 
         # Params for augmentation method
@@ -77,7 +77,7 @@ class VideoSeqAugmentor:
         return seq
 
     def eraser_transform(self, seq):
-        w, h = seq[0][0].shape[:2]
+        h, w = seq[0][0].shape[:2]
         for cam in [0, 1]:
             for frame in range(len(seq)):
                 if np.random.rand() < self.prob_eraser_aug:
@@ -102,29 +102,55 @@ class VideoSeqAugmentor:
         return seq, disp
 
     def spatial_transform(self, seq, disp):
-        w, h = seq[0][0].shape[:2]
+        h, w = seq[0][0].shape[:2]
         crop_w, crop_h = self.crop_size
-        if np.random.rand() < self.prob_resize:
-            # Determine the params for x_stretch, y_stretch, crop_window, horizontal and vertical flip
-            min_x_scale = np.log2(crop_w / w)
-            min_y_scale = np.log2(crop_h / h)
-            x_scale = np.random.uniform(np.maximum(min_x_scale, self.min_scale), self.max_scale)
-            y_scale = np.random.uniform(np.maximum(min_y_scale, self.min_scale), self.max_scale)
-            for frame in range(len(seq)):
-                resized_disp = cv2.resize(disp[frame], dsize=(w * x_scale + 8, h * y_scale + 8),
-                                          interpolation=cv2.INTER_NEAREST)
-                disp[frame] = resized_disp
-                for cam in [0, 1]:
-                    resized_img = cv2.resize(seq[frame][cam], dsize=(w * x_scale + 8, h * y_scale + 8),
-                                             interpolation=cv2.INTER_NEAREST)
-                    seq[frame][cam] = resized_img
+
+        if np.random.rand() >= self.prob_resize:
+            return seq, disp
+
+        min_x_scale = np.log2(crop_w / w)
+        min_y_scale = np.log2(crop_h / h)
+
+        x_scale = 2 ** np.random.uniform(
+            max(min_x_scale, self.min_scale), self.max_scale
+        )
+        y_scale = 2 ** np.random.uniform(
+            max(min_y_scale, self.min_scale), self.max_scale
+        )
+
+        new_h = int(h * y_scale) + 8
+        new_w = int(w * x_scale) + 8
+
+        for frame in range(len(seq)):
+            resized_disp = cv2.resize(
+                disp[frame], dsize=(new_w, new_h), interpolation=cv2.INTER_LINEAR
+            )
+
+            for cam in [0, 1]:
+                resized_img = cv2.resize(
+                    seq[frame][cam], dsize=(new_w, new_h), interpolation=cv2.INTER_LINEAR
+                )
+                seq[frame][cam] = resized_img
+
+            disp[frame] = resized_disp
+
+        y0 = np.random.randint(0, new_h - crop_h + 1)
+        x0 = np.random.randint(0, new_w - crop_w + 1)
+
+        for frame in range(len(seq)):
+            disp[frame] = disp[frame][y0: y0 + crop_h, x0: x0 + crop_w]
+
+            for cam in [0, 1]:
+                seq[frame][cam] = seq[frame][cam][y0: y0 + crop_h,
+                                  x0: x0 + crop_w, :]
+
         return seq, disp
 
     def __call__(self, seq, disp):
         seq = self.color_transform(seq)
-        seq = self.eraser_transform(seq)
         seq, disp = self.flip_transform(seq, disp)
         seq, disp = self.spatial_transform(seq, disp)
+        seq = self.eraser_transform(seq)
 
         # Make sure that the sequence images and disparities are continuous in memory
         for frame in range(len(seq)):
