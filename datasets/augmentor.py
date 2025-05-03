@@ -27,7 +27,7 @@ class AdjustGamma:
 class VideoSeqAugmentor:
     def __init__(self, crop_size, saturation_range=[0.6, 1.4], gamma_params=[0.8, 1.4, 1.0, 1.2]):
         # Probability of different augmentation method
-        self.prob_eraser_aug = 0.2
+        self.prob_eraser_aug = 0.4
         self.prob_vflip_aug = 0.1
         self.prob_hflip_aug = 0.1
         self.prob_asymmetric_color_aug = 0.2
@@ -66,5 +66,15 @@ class VideoSeqAugmentor:
                     seq[frame][cam] = adjusted_img
         return seq
 
-    def eraser_transform(self, seq):
+    def eraser_transform(self, seq, bounds=[30, 60]):
         w, h = seq[0][0].shape[:2]
+        for cam in [0, 1]:
+            for frame in range(len(seq)):
+                if np.random.rand() < self.prob_eraser_aug:
+                    mean_color = seq[frame][cam].reshape(-1, 3).mean(axis=0)
+                    x0 = np.random.randint(0, w - bounds[1])
+                    y0 = np.random.randint(0, h - bounds[1])
+                    dx = np.random.randint(bounds[0], bounds[1])
+                    dy = np.random.randint(bounds[0], bounds[1])
+                    seq[frame][cam][y0: y0 + dy, x0: x0 + dx, :] = mean_color
+        return seq
