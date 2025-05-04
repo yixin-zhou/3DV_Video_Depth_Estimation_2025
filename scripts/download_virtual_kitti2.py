@@ -41,7 +41,7 @@ if __name__ == '__main__':
                   }
 
     # Download Virtual KITTI2 RGB and depth dataset and extract them
-    for content_type in ['textgt']:
+    for content_type in ['depth', 'rgb', 'textgt']:
         vktti_url = f'https://download.europe.naverlabs.com//virtual_kitti_2.0.3/vkitti_2.0.3_{content_type}.tar'
         if content_type == 'textgt':
             vktti_url = vktti_url + '.gz'
