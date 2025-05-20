@@ -79,7 +79,6 @@ def read_kitti_camdata(base_path, date, drive, frame_id):
     T_imu_w = np.linalg.inv(T_w_imu)
     T_cam2_w = data.calib.T_cam2_imu.dot(T_imu_w)
 
-
     return {'intrinsic': K, 'extrinsic': T_cam2_w}
 
 
