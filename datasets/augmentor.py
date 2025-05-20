@@ -129,6 +129,10 @@ class VideoSeqAugmentor:
         seq_copy = copy.deepcopy(seq)
         disp_copy = copy.deepcopy(disp)
         h, w = seq_copy[0][0].shape[:2]
+
+        if self.crop_size is None:
+            return seq_copy, disp_copy
+
         crop_w, crop_h = self.crop_size
 
         if np.random.rand() >= self.prob_resize:
