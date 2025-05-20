@@ -39,7 +39,9 @@ RUN conda activate my &&\
     pip install scikit-image omegaconf opencv-contrib-python  imgaug Ninja timm albumentations nodejs jupyterlab scipy joblib scikit-learn ruamel.yaml trimesh pyyaml imageio open3d transformations einops gdown  &&\
     pip install -U git+https://github.com/lilohuang/PyTurboJPEG.git &&\
     pip install flash-attn --no-build-isolation &&\
-    pip install xformers==0.0.28.post1 --index-url https://download.pytorch.org/whl/cu124
+    pip install xformers==0.0.28.post1 --index-url https://download.pytorch.org/whl/cu124 &&\
+    pip install onnx onnxruntime-gpu
+
 ENV SHELL=/bin/bash
 RUN ln -sf /bin/bash /bin/sh
 

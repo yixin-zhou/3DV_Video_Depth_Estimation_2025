@@ -1,3 +1,10 @@
+"""
+数据变换工具 (Data Transformation Utilities)
+该模块提供了用于深度估计数据处理的变换函数和类。
+包含调整图像尺寸、归一化和数据格式转换等基础操作，
+这些工具用于预处理输入图像和深度图，使其符合网络的输入要求。
+"""
+
 import random
 from PIL import Image, ImageOps, ImageFilter
 import torch
@@ -10,14 +17,21 @@ import math
 
 
 def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
-    """Rezise the sample to ensure the given size. Keeps aspect ratio.
-
-    Args:
-        sample (dict): sample
-        size (tuple): image size
-
-    Returns:
-        tuple: new size
+    """
+    应用最小尺寸约束
+    
+    保持纵横比调整样本尺寸，确保满足最小尺寸要求:
+    - 如果样本尺寸已经满足要求，则不做调整
+    - 计算缩放比例，保持原始宽高比
+    - 同时调整图像、视差图和掩码
+    
+    参数:
+        sample: 包含图像和深度信息的样本字典
+        size: 目标最小尺寸(高,宽)
+        image_interpolation_method: 图像插值方法
+        
+    返回:
+        调整后的样本尺寸元组
     """
     shape = list(sample["disparity"].shape)
 
@@ -52,7 +66,17 @@ def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
 
 
 class Resize(object):
-    """Resize sample to given size (width, height).
+    """
+    尺寸调整变换
+    
+    灵活的图像尺寸调整类，支持多种调整策略:
+    - 可调整整个样本或仅调整图像
+    - 支持保持纵横比或强制调整到指定尺寸
+    - 提供多种调整方法，如下界约束、上界约束和最小变化
+    - 可指定输出尺寸为特定数字的倍数
+    
+    该类用于预处理输入数据，使其符合模型的输入要求，
+    同时提供灵活的配置选项以满足不同场景的需求。
     """
 
     def __init__(
@@ -65,28 +89,17 @@ class Resize(object):
         resize_method="lower_bound",
         image_interpolation_method=cv2.INTER_AREA,
     ):
-        """Init.
-
-        Args:
-            width (int): desired output width
-            height (int): desired output height
-            resize_target (bool, optional):
-                True: Resize the full sample (image, mask, target).
-                False: Resize image only.
-                Defaults to True.
-            keep_aspect_ratio (bool, optional):
-                True: Keep the aspect ratio of the input sample.
-                Output sample might not have the given width and height, and
-                resize behaviour depends on the parameter 'resize_method'.
-                Defaults to False.
-            ensure_multiple_of (int, optional):
-                Output width and height is constrained to be multiple of this parameter.
-                Defaults to 1.
-            resize_method (str, optional):
-                "lower_bound": Output will be at least as large as the given size.
-                "upper_bound": Output will be at max as large as the given size. (Output size might be smaller than given size.)
-                "minimal": Scale as least as possible.  (Output size might be smaller than given size.)
-                Defaults to "lower_bound".
+        """
+        初始化尺寸调整变换
+        
+        参数:
+            width: 目标宽度
+            height: 目标高度
+            resize_target: 是否调整目标(深度图等)
+            keep_aspect_ratio: 是否保持纵横比
+            ensure_multiple_of: 确保输出尺寸是该数的倍数
+            resize_method: 调整方法，可选"lower_bound"、"upper_bound"或"minimal"
+            image_interpolation_method: 图像插值方法
         """
         self.__width = width
         self.__height = height
@@ -98,6 +111,22 @@ class Resize(object):
         self.__image_interpolation_method = image_interpolation_method
 
     def constrain_to_multiple_of(self, x, min_val=0, max_val=None):
+        """
+        约束值为指定数的倍数
+        
+        将给定值调整为最接近的倍数值:
+        - 默认进行四舍五入
+        - 如果超过最大值，则向下取整
+        - 如果低于最小值，则向上取整
+        
+        参数:
+            x: 输入值
+            min_val: 最小允许值
+            max_val: 最大允许值
+            
+        返回:
+            调整后的值
+        """
         y = (np.round(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         if max_val is not None and y > max_val:
@@ -109,6 +138,20 @@ class Resize(object):
         return y
 
     def get_size(self, width, height):
+        """
+        计算调整后的尺寸
+        
+        根据输入尺寸和调整策略，计算输出尺寸:
+        - 计算宽高缩放比例
+        - 根据调整方法和约束条件确定最终尺寸
+        
+        参数:
+            width: 输入宽度
+            height: 输入高度
+            
+        返回:
+            调整后的尺寸(宽,高)元组
+        """
         # determine new height and width
         scale_height = self.__height / height
         scale_width = self.__width / width
@@ -166,6 +209,15 @@ class Resize(object):
         return (new_width, new_height)
 
     def __call__(self, sample):
+        """
+        应用尺寸调整变换
+        
+        参数:
+            sample: 输入样本字典，包含图像和可选的深度信息
+            
+        返回:
+            调整尺寸后的样本
+        """
         width, height = self.get_size(
             sample["image"].shape[1], sample["image"].shape[0]
         )
@@ -191,9 +243,6 @@ class Resize(object):
                 )
 
             if "semseg_mask" in sample:
-                # sample["semseg_mask"] = cv2.resize(
-                #     sample["semseg_mask"], (width, height), interpolation=cv2.INTER_NEAREST
-                # )
                 sample["semseg_mask"] = F.interpolate(torch.from_numpy(sample["semseg_mask"]).float()[None, None, ...], (height, width), mode='nearest').numpy()[0, 0]
 
             if "mask" in sample:
@@ -202,34 +251,72 @@ class Resize(object):
                     (width, height),
                     interpolation=cv2.INTER_NEAREST,
                 )
-                # sample["mask"] = sample["mask"].astype(bool)
 
-        # print(sample['image'].shape, sample['depth'].shape)
         return sample
 
 
 class NormalizeImage(object):
-    """Normlize image by given mean and std.
+    """
+    图像归一化变换
+    
+    使用指定的均值和标准差对图像进行归一化:
+    - 应用公式 (image - mean) / std
+    - 使图像值分布适合深度学习模型处理
+    
+    这是深度学习预处理的标准步骤，使模型收敛更快更稳定。
     """
 
     def __init__(self, mean, std):
+        """
+        初始化归一化变换
+        
+        参数:
+            mean: 均值，用于减法操作
+            std: 标准差，用于除法操作
+        """
         self.__mean = mean
         self.__std = std
 
     def __call__(self, sample):
+        """
+        应用归一化变换
+        
+        参数:
+            sample: 输入样本字典
+            
+        返回:
+            归一化后的样本
+        """
         sample["image"] = (sample["image"] - self.__mean) / self.__std
 
         return sample
 
 
 class PrepareForNet(object):
-    """Prepare sample for usage as network input.
+    """
+    网络输入准备变换
+    
+    将样本准备为神经网络输入格式:
+    - 转换图像通道顺序为(C,H,W)
+    - 确保数据为连续存储的float32类型
+    - 对深度图和掩码进行相应处理
+    
+    这是模型推理前的最后处理步骤，确保数据格式符合PyTorch要求。
     """
 
     def __init__(self):
         pass
 
     def __call__(self, sample):
+        """
+        应用网络输入准备变换
+        
+        参数:
+            sample: 输入样本字典
+            
+        返回:
+            准备好的网络输入样本
+        """
         image = np.transpose(sample["image"], (2, 0, 1))
         sample["image"] = np.ascontiguousarray(image).astype(np.float32)
 

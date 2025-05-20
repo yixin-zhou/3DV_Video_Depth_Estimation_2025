@@ -6,6 +6,12 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
+"""
+演示脚本 (Demonstration Script)
+该脚本提供了FoundationStereo模型的完整推理演示流程。
+支持从单对立体图像预测视差图、生成深度图和3D点云，
+并提供点云后处理和可视化功能，展示立体匹配的全部流程和结果。
+"""
 
 import os,sys
 code_dir = os.path.dirname(os.path.realpath(__file__))
@@ -18,6 +24,7 @@ from core.foundation_stereo import *
 
 if __name__=="__main__":
   code_dir = os.path.dirname(os.path.realpath(__file__))
+  # 命令行参数解析
   parser = argparse.ArgumentParser()
   parser.add_argument('--left_file', default=f'{code_dir}/../assets/left.png', type=str)
   parser.add_argument('--right_file', default=f'{code_dir}/../assets/right.png', type=str)
@@ -35,11 +42,13 @@ if __name__=="__main__":
   parser.add_argument('--denoise_radius', type=float, default=0.03, help='radius to use for outlier removal')
   args = parser.parse_args()
 
+  # 设置日志格式和随机种子
   set_logging_format()
   set_seed(0)
   torch.autograd.set_grad_enabled(False)
   os.makedirs(args.out_dir, exist_ok=True)
 
+  # 加载模型配置并合并命令行参数
   ckpt_dir = args.ckpt_dir
   cfg = OmegaConf.load(f'{os.path.dirname(ckpt_dir)}/cfg.yaml')
   if 'vit_size' not in cfg:
@@ -50,6 +59,7 @@ if __name__=="__main__":
   logging.info(f"args:\n{args}")
   logging.info(f"Using pretrained model from {ckpt_dir}")
 
+  # 初始化模型并加载预训练权重
   model = FoundationStereo(args)
 
   ckpt = torch.load(ckpt_dir)
@@ -59,6 +69,7 @@ if __name__=="__main__":
   model.cuda()
   model.eval()
 
+  # 加载并预处理立体图像对
   code_dir = os.path.dirname(os.path.realpath(__file__))
   img0 = imageio.imread(args.left_file)
   img1 = imageio.imread(args.right_file)
@@ -70,45 +81,63 @@ if __name__=="__main__":
   img0_ori = img0.copy()
   logging.info(f"img0: {img0.shape}")
 
+  # 转换图像格式并进行填充，使尺寸符合模型要求
   img0 = torch.as_tensor(img0).cuda().float()[None].permute(0,3,1,2)
   img1 = torch.as_tensor(img1).cuda().float()[None].permute(0,3,1,2)
   padder = InputPadder(img0.shape, divis_by=32, force_square=False)
   img0, img1 = padder.pad(img0, img1)
 
+  # 执行视差预测，支持普通和层次化推理
   with torch.cuda.amp.autocast(True):
     if not args.hiera:
       disp = model.forward(img0, img1, iters=args.valid_iters, test_mode=True)
     else:
       disp = model.run_hierachical(img0, img1, iters=args.valid_iters, test_mode=True, small_ratio=0.5)
+  
+  # 移除填充并将结果转换为NumPy数组
   disp = padder.unpad(disp.float())
   disp = disp.data.cpu().numpy().reshape(H,W)
+  
+  # 生成视差图可视化并保存
   vis = vis_disparity(disp)
   vis = np.concatenate([img0_ori, vis], axis=1)
   imageio.imwrite(f'{args.out_dir}/vis.png', vis)
   logging.info(f"Output saved to {args.out_dir}")
 
+  # 移除视差图中的不可见区域（超出右图范围的像素）
   if args.remove_invisible:
     yy,xx = np.meshgrid(np.arange(disp.shape[0]), np.arange(disp.shape[1]), indexing='ij')
     us_right = xx-disp
     invalid = us_right<0
     disp[invalid] = np.inf
 
+  # 生成深度图和点云
   if args.get_pc:
+    # 读取相机内参和基线信息
     with open(args.intrinsic_file, 'r') as f:
       lines = f.readlines()
       K = np.array(list(map(float, lines[0].rstrip().split()))).astype(np.float32).reshape(3,3)
       baseline = float(lines[1])
+    
+    # 根据缩放比例调整相机内参
     K[:2] *= scale
+    
+    # 计算深度图并保存
     depth = K[0,0]*baseline/disp
     np.save(f'{args.out_dir}/depth_meter.npy', depth)
+    
+    # 生成点云并保存
     xyz_map = depth2xyzmap(depth, K)
     pcd = toOpen3dCloud(xyz_map.reshape(-1,3), img0_ori.reshape(-1,3))
+    
+    # 裁剪点云，移除远处和过近的点
     keep_mask = (np.asarray(pcd.points)[:,2]>0) & (np.asarray(pcd.points)[:,2]<=args.z_far)
     keep_ids = np.arange(len(np.asarray(pcd.points)))[keep_mask]
     pcd = pcd.select_by_index(keep_ids)
     o3d.io.write_point_cloud(f'{args.out_dir}/cloud.ply', pcd)
     logging.info(f"PCL saved to {args.out_dir}")
 
+    # 可选的点云去噪步骤
     if args.denoise_cloud:
       logging.info("[Optional step] denoise point cloud...")
       cl, ind = pcd.remove_radius_outlier(nb_points=args.denoise_nb_points, radius=args.denoise_radius)
@@ -116,6 +145,7 @@ if __name__=="__main__":
       o3d.io.write_point_cloud(f'{args.out_dir}/cloud_denoise.ply', inlier_cloud)
       pcd = inlier_cloud
 
+    # 点云可视化
     logging.info("Visualizing point cloud. Press ESC to exit.")
     vis = o3d.visualization.Visualizer()
     vis.create_window()

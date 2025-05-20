@@ -19,19 +19,19 @@ test_sequences = ["2011_09_26_drive_0002",
                   ]
 calib_files = ['2011_09_26_calib.zip', '2011_09_28_calib.zip', '2011_09_29_calib.zip', '2011_10_03_calib.zip']
 
-save_dir = '../data/'
+save_dir = 'data/'
 depth_annotated_dir = os.path.join(save_dir, 'data_depth_annotated.zip')
 
 # Download KITTI Depth Prediction Dataset
 base_url = 'https://s3.eu-central-1.amazonaws.com/avg-kitti/'
 depth_annotated_url = base_url + "data_depth_annotated.zip"
-download_url(depth_annotated_url, save_path=depth_annotated_dir, desc='Downloading KITTI Depth Prediction Dataset')
+# download_url(depth_annotated_url, save_path=depth_annotated_dir, desc='Downloading KITTI Depth Prediction Dataset')
 
 print(f"Unzipping {depth_annotated_dir}")
-with zipfile.ZipFile(depth_annotated_dir, 'r') as zip_ref:
-    zip_ref.extractall(depth_annotated_dir.replace('.zip', ''))
+# with zipfile.ZipFile(depth_annotated_dir, 'r') as zip_ref:
+#     zip_ref.extractall(depth_annotated_dir.replace('.zip', ''))
 
-os.remove(depth_annotated_dir)
+# os.remove(depth_annotated_dir)
 
 # Download calibration data for different dates
 raw_kitti_dir = os.path.join(save_dir, 'raw_kitti')
@@ -39,10 +39,10 @@ raw_kitti_dir = os.path.join(save_dir, 'raw_kitti')
 for calib in  calib_files:
     calib_url = base_url + 'raw_data/' + calib
     calib_save_dir = os.path.join(raw_kitti_dir, calib)
-    download_url(calib_url, save_path=calib_save_dir, desc=f'Downloading {calib}')
-    with zipfile.ZipFile(os.path.join(raw_kitti_dir, calib), 'r') as zip_ref:
-        zip_ref.extractall(calib_save_dir.replace('.zip', ''))
-    os.remove(calib_save_dir)
+    # download_url(calib_url, save_path=calib_save_dir, desc=f'Downloading {calib}')
+    # with zipfile.ZipFile(os.path.join(raw_kitti_dir, calib), 'r') as zip_ref:
+    #     zip_ref.extractall(calib_save_dir.replace('.zip', ''))
+    # os.remove(calib_save_dir)
 
 # Download KITTI raw data sequences
 sequences = {}
@@ -61,6 +61,7 @@ for key, items in sequences.items():
             sequence_save_dir = os.path.join(raw_kitti_dir, 'test', item + '.zip')
         else:
             sequence_save_dir = os.path.join(raw_kitti_dir, split, item + '.zip')
+        print(sequence_url)
         download_url(sequence_url, save_path=sequence_save_dir, desc=f'Downloading {item}')
 
         with zipfile.ZipFile(os.path.join(sequence_save_dir), 'r') as zip_ref:

@@ -3,7 +3,7 @@ import zipfile
 import os
 
 Sintel_url = 'http://files.is.tue.mpg.de/jwulff/sintel/MPI-Sintel-stereo-training-20150305.zip'
-save_dir = '../data'
+save_dir = 'data/'
 save_path = os.path.join(save_dir, 'MPI-Sintel-stereo-training-20150305.zip')
 extract_path = os.path.join(save_dir, 'MPI-Sintel-stereo-training-20150305')
 
