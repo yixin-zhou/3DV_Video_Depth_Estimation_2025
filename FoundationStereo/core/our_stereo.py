@@ -508,6 +508,10 @@ class OurStereo(nn.Module, huggingface_hub.PyTorchModelHubMixin):
         
         self.foundation_stereo = FoundationStereo(args)
         
+        # 冻结 foundation_stereo 的所有参数
+        for param in self.foundation_stereo.parameters():
+            param.requires_grad = False    
+        
         # 相关性特征处理MLP，将4*9*9维度的相关性特征转换为128维度,dqr
         # self.corr_mlp = Mlp(in_features=4 * 9 * 9, hidden_features=256, out_features=128)
         self.corr_mlp = Mlp(in_features=28 * 104, hidden_features=256, out_features=128)
@@ -631,8 +635,10 @@ if __name__ == '__main__':
     
     model = OurStereo(args)
     model.cuda()
-    # model.FoundationStereo.load()
-    model.eval()
+    ckpt_dir = "/home/shizl/3DV_Video_Depth_Estimation_2025/FoundationStereo/pretrained_models/23-51-11/model_best_bp2.pth"
+    ckpt = torch.load(ckpt_dir, weights_only=False)
+    model.foundation_stereo.load_state_dict(ckpt['model'])
+    print("Loading pretrained model done.")
     
     B = 1
     T = 2
@@ -641,6 +647,7 @@ if __name__ == '__main__':
     
     img0, img1 = torch.randn(B, T, C, H, W).half().cuda(), torch.randn(B, T, C, H, W).half().cuda()
     
+    model.eval()
     x = model.forward(img0, img1, iters=10, test_mode=True)
     
     print(x.shape)
