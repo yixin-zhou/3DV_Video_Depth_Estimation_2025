@@ -422,8 +422,8 @@ class FoundationStereo(nn.Module, huggingface_hub.PyTorchModelHubMixin):
         6. 视差上采样和后处理
         
         参数:
-            image1: 左图像，形状为[B,3,H,W]
-            image2: 右图像，形状为[B,3,H,W]
+            image1: 左图像，形状为[B,t,3,H,W]
+            image2: 右图像，形状为[B,t,3,H,W]
             iters: GRU更新迭代次数，默认12
             flow_init: 可选的初始视差，默认为None
             test_mode: 测试模式标志，影响中间结果输出
@@ -593,9 +593,10 @@ class OurStereo(nn.Module, huggingface_hub.PyTorchModelHubMixin):
         # 整理所有预测结果
         predictions = torch.stack(flow_predictions)  # [num_predictions, b*T, 1, h, w]
         # 重排列为[num_predictions, T, b, 1, h, w]以便于处理时间维度
-        predictions = rearrange(predictions, "d (b t) c h w -> d t b c h w", b=B, t=T)
+        predictions = rearrange(predictions, "d (b t) c h w -> b d t c h w", b=B, t=T)
+        predictions = predictions.squeeze(3) # [b, num_predictions, T, h, w]
         # 获取最终预测
-        flow_up = predictions[-1]  # [T, b, 1, h, w]
+        flow_up = predictions[:,-1]  # [b, T, h, w]
 
         if test_mode:
             return flow_up  # 测试模式只返回最终预测

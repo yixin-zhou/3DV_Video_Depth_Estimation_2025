@@ -221,3 +221,69 @@ def consistency_loss(seq, disparities, Flow_Model, alpha=50):
     temporal_loss = torch.mean(temporal_loss_back) + torch.mean(temporal_loss_for)
 
     return temporal_loss
+
+def sequence_loss_video(predictions, flow_gt, loss_gamma=0.9, max_flow=700):
+    """计算视频视差预测的损失
+    
+    针对视频序列的损失函数，计算所有迭代和所有时间步的加权L2损失
+    
+    Args:
+        predictions: 视差预测，形状为 [b, N, T, h, w]
+            b: batch_size
+            N: 迭代次数
+            T: 时间步数
+            h, w: 高度和宽度
+        flow_gt: 真实视差，形状为 [b, T, h, w]
+        loss_gamma: 损失衰减因子，用于给不同迭代的损失分配权重
+        max_flow: 最大流大小阈值，用于排除异常值
+        
+    Returns:
+        torch.Tensor: 总损失
+        dict: 评估指标
+    """
+    b, n_predictions, T, h, w = predictions.shape
+    assert n_predictions >= 1
+    flow_loss = 0.0
+    
+    # 排除极端大的视差值
+    flow_gt_flat = flow_gt.reshape(b*T, h, w)  # [b*T, h, w]
+    mag = flow_gt_flat.abs()  # 视差的绝对值
+    
+    # 创建有效区域掩码，排除无效像素和极端视差
+    valid = mag < max_flow
+    
+    for i in range(n_predictions):
+        # 计算第i次迭代的权重
+        if n_predictions == 1:
+            i_weight = 1
+        else:
+            # 对于不同数量的迭代，调整gamma以保持一致性
+            # 索引从0开始，但迭代从1开始计数，所以用(n_predictions-i-1)
+            i_weight = loss_gamma ** (n_predictions - i - 1)
+        
+        # 获取第i次迭代的所有时间步预测
+        flow_pred = predictions[:, i]  # [b, T, h, w]
+        
+        # 计算L2损失
+        pred_flat = flow_pred.reshape(b*T, h, w)  # [b*T, h, w]
+        gt_flat = flow_gt_flat  # [b*T, h, w]
+        
+        # 有效区域的平方误差 (L2)
+        squared_err = (pred_flat - gt_flat) ** 2  # [b*T, h, w]
+        
+        # 计算有效区域的平均损失并加权
+        flow_loss += i_weight * (squared_err * valid.float()).sum() / valid.float().sum().clamp(min=1.0)
+    
+    # 计算最终预测的端点误差 (EPE)
+    final_pred = predictions[:, -1]  # [b, T, h, w]
+    epe = (final_pred - flow_gt).abs()
+    
+    # 汇总评估指标
+    metrics = {
+        "epe": epe.mean().item(),
+        "1px": (epe < 1).float().mean().item(),
+        "3px": (epe < 3).float().mean().item(),
+        "5px": (epe < 5).float().mean().item(),
+    }
+    
+    return flow_loss, metrics
