@@ -6,61 +6,61 @@ import json
 import flow_vis
 import matplotlib.pyplot as plt
 
-import stereoanyvideo.datasets.video_datasets as datasets
-from stereoanyvideo.evaluation.utils.utils import aggregate_and_print_results
+# import stereoanyvideo.datasets.video_datasets as datasets
+# from stereoanyvideo.evaluation.utils.utils import aggregate_and_print_results
 
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def run_test_eval(ckpt_path, eval_type, evaluator, model, dataloaders, writer, step):
-    for ds_name, dataloader in dataloaders:
-        # evaluator.visualize_interval = 1 if not "sintel" in ds_name else 0
+# def run_test_eval(ckpt_path, eval_type, evaluator, model, dataloaders, writer, step):
+#     for ds_name, dataloader in dataloaders:
+#         # evaluator.visualize_interval = 1 if not "sintel" in ds_name else 0
 
-        evaluate_result = evaluator.evaluate_sequence(
-            model=model.module.module,
-            test_dataloader=dataloader,
-            writer=writer if not "sintel" in ds_name else None,
-            step=step,
-            train_mode=True,
-        )
+#         evaluate_result = evaluator.evaluate_sequence(
+#             model=model.module.module,
+#             test_dataloader=dataloader,
+#             writer=writer if not "sintel" in ds_name else None,
+#             step=step,
+#             train_mode=True,
+#         )
 
-        aggregate_result = aggregate_and_print_results(
-            evaluate_result,
-        )
+#         aggregate_result = aggregate_and_print_results(
+#             evaluate_result,
+#         )
 
-        save_metrics = [
-            "flow_mean_accuracy_5px",
-            "flow_mean_accuracy_3px",
-            "flow_mean_accuracy_1px",
-            "flow_epe_traj_mean",
-        ]
-        for epe_name in ("epe", "temp_epe", "temp_epe_r"):
-            for m in [
-                f"disp_{epe_name}_bad_0.5px",
-                f"disp_{epe_name}_bad_1px",
-                f"disp_{epe_name}_bad_2px",
-                f"disp_{epe_name}_bad_3px",
-                f"disp_{epe_name}_mean",
-            ]:
-                save_metrics.append(m)
+#         save_metrics = [
+#             "flow_mean_accuracy_5px",
+#             "flow_mean_accuracy_3px",
+#             "flow_mean_accuracy_1px",
+#             "flow_epe_traj_mean",
+#         ]
+#         for epe_name in ("epe", "temp_epe", "temp_epe_r"):
+#             for m in [
+#                 f"disp_{epe_name}_bad_0.5px",
+#                 f"disp_{epe_name}_bad_1px",
+#                 f"disp_{epe_name}_bad_2px",
+#                 f"disp_{epe_name}_bad_3px",
+#                 f"disp_{epe_name}_mean",
+#             ]:
+#                 save_metrics.append(m)
 
-        for k, v in aggregate_result.items():
-            if k in save_metrics:
-                writer.add_scalars(
-                    f"{ds_name}_{k.rsplit('_', 1)[0]}",
-                    {f"{ds_name}_{k}": v},
-                    step,
-                )
+#         for k, v in aggregate_result.items():
+#             if k in save_metrics:
+#                 writer.add_scalars(
+#                     f"{ds_name}_{k.rsplit('_', 1)[0]}",
+#                     {f"{ds_name}_{k}": v},
+#                     step,
+#                 )
 
-        result_file = os.path.join(
-            ckpt_path,
-            f"result_{ds_name}_{eval_type}_{step}_mimo.json",
-        )
-        print(f"Dumping {eval_type} results to {result_file}.")
-        with open(result_file, "w") as f:
-            json.dump(aggregate_result, f)
+#         result_file = os.path.join(
+#             ckpt_path,
+#             f"result_{ds_name}_{eval_type}_{step}_mimo.json",
+#         )
+#         print(f"Dumping {eval_type} results to {result_file}.")
+#         with open(result_file, "w") as f:
+#             json.dump(aggregate_result, f)
 
 
 def fig2data(fig):

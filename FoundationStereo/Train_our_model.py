@@ -30,16 +30,17 @@ import json
 import heapq
 from pytorch_lightning.lite import LightningLite
 from torch.cuda.amp import GradScaler
+from omegaconf import OmegaConf
 
 from FoundationStereo.train_utils.utils import (
-    run_test_eval,
+    # run_test_eval,
     save_ims_to_tb,
     count_parameters,
 )
 from train_utils.logger import Logger
 
 from FoundationStereo.core.our_stereo import OurStereo
-from FoundationStereo.evaluation.core.evaluator import Evaluator
+# from FoundationStereo.evaluation.core.evaluator import Evaluator
 from FoundationStereo.train_utils.losses import sequence_loss, temporal_loss, sequence_loss_video
 from datasets_for_ourstereo.datasets import VideoSintelDataset
 
@@ -71,7 +72,7 @@ def fetch_dataloader(args, is_train=True):
         base_dir = args.train_dataset_path
     else:
         base_dir = args.val_dataset_path if args.val_dataset_path else args.train_dataset_path
-    
+    print("args.crop_size:", args.crop_size)
     # 创建Sintel数据集
     dataset = VideoSintelDataset(
         dstype=dstype,
@@ -153,6 +154,7 @@ def forward_batch(left_seq, right_seq, disp_seq, model):
     
     # 模型前向传播获取视差预测
     # 输出 disparities 形状为 [B, N, T, H, W]，N 是迭代次数
+    print("left_seq, right_seq:", left_seq.shape, right_seq.shape)
     disparities = model(left_seq, right_seq)
     
     # 计算损失
@@ -256,7 +258,7 @@ class Lite(LightningLite):
     
     使用Lightning Lite框架实现的训练器，支持分布式训练
     """
-    def run(self, args):
+    def run(self, args, args_1):
         """执行训练流程
         
         Args:
@@ -265,7 +267,7 @@ class Lite(LightningLite):
         self.seed_everything(0)  # 固定随机种子
 
         # 初始化评估器 dqr here to redefine evaluator
-        evaluator = Evaluator()
+        # evaluator = Evaluator()
 
         # 设置可视化
         eval_vis_cfg = {
@@ -273,11 +275,14 @@ class Lite(LightningLite):
             "exp_dir": args.ckpt_path,
         }
         eval_vis_cfg = DefaultMunch.fromDict(eval_vis_cfg, object())
-        evaluator.setup_visualization(eval_vis_cfg)
+        # evaluator.setup_visualization(eval_vis_cfg)
 
         # 创建模型并移至GPU dqr 这里要加并行训练
-        model = OurStereo(args)
+        model = OurStereo(args_1)
         model.cuda()
+        foundationstereo_ckpt_dir = "/home/shizl/3DV_Video_Depth_Estimation_2025/FoundationStereo/pretrained_models/23-51-11/model_best_bp2.pth"
+        foundationstereo_ckpt = torch.load(foundationstereo_ckpt_dir, weights_only=False)
+        model.foundation_stereo.load_state_dict(foundationstereo_ckpt['model'])
 
         # 保存训练配置
         with open(args.ckpt_path + "/meta.json", "w") as file:
@@ -529,6 +534,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
+    print("args.crop_size:", args.crop_size)
+    
     # 创建检查点目录
     Path(args.ckpt_path).mkdir(exist_ok=True, parents=True)
     
@@ -543,5 +550,14 @@ if __name__ == "__main__":
     )
 
     # 启动训练 dqr 这里要加并行训练
-    lite = Lite(devices="auto", accelerator="auto", precision=16 if args.mixed_precision else 32)
-    lite.run(args)
+    # lite = Lite(devices="auto", accelerator="auto", precision=16 if args.mixed_precision else 32)
+    lite = Lite(devices=[0], accelerator="cuda", precision=16 if args.mixed_precision else 32)
+    if True:
+        path = "/home/shizl/3DV_Video_Depth_Estimation_2025/FoundationStereo/pretrained_models/23-51-11/cfg.yaml"
+        cfg = OmegaConf.load(path)
+        if 'vit_size' not in cfg:
+            cfg['vit_size'] = 'vitl'
+        args_1 = OmegaConf.create(cfg)
+        args_1.valid_iters = 32
+
+    lite.run(args, args_1)

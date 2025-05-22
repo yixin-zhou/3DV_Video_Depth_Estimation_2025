@@ -3,8 +3,8 @@
 export PYTHONPATH=`(cd ../ && pwd)`:`pwd`:$PYTHONPATH
 
 # 设置训练数据集路径
-TRAIN_DATA_PATH="/path/to/your/train/dataset"
-VAL_DATA_PATH="/path/to/your/validation/dataset"  # 如果不指定，将使用训练数据集路径
+TRAIN_DATA_PATH="/home/shizl/3DV_Video_Depth_Estimation_2025/data/MPI-Sintel-stereo-training-20150305/val"
+VAL_DATA_PATH="/home/shizl/3DV_Video_Depth_Estimation_2025/data/MPI-Sintel-stereo-training-20150305/val"  # 如果不指定，将使用训练数据集路径
 
 # 设置模型检查点保存路径
 CKPT_PATH="checkpoints/our_stereo"
@@ -16,8 +16,8 @@ CKPT_PATH="checkpoints/our_stereo"
 python FoundationStereo/Train_our_model.py \
   --train_dataset_path ${TRAIN_DATA_PATH} \
   --val_dataset_path ${VAL_DATA_PATH} \
-  --crop_size 512 256 \
-  --batch_size 2 \
+  --crop_size 256 128 \
+  --batch_size 1 \
   --num_workers 4 \
   --lr 0.0002 \
   --wdecay 0.00001 \

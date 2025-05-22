@@ -1,7 +1,15 @@
+import os
+import sys
+
+# 1) 找到 project/ 根目录：
+root = os.path.dirname(os.path.dirname(__file__))
+# 2) 把它插到搜索路径最前面：
+sys.path.insert(0, root)
+
 from torch.utils.data import Dataset
 import torch
 from pytorch3d.renderer.cameras import PerspectiveCameras
-from augmentor import VideoSeqAugmentor
+from datasets_for_ourstereo.augmentor import VideoSeqAugmentor
 from utils.utils_read import read_sintel_depth, read_sintel_disparity
 from abc import ABC, abstractmethod
 
@@ -26,13 +34,14 @@ class VideoSeqDataset(Dataset, ABC):
 class VideoSintelDataset(VideoSeqDataset):
     def __init__(self,
                  dstype,
-                 base_dir="/Users/dengqinrui/Downloads/Stereo Video Depth/MPI-Sintel-stereo-training-20150305/training",
+                 base_dir="/home/shizl/3DV_Video_Depth_Estimation_2025/data/MPI-Sintel-stereo-training-20150305/training",
                  aug_params={},
                  crop_size=None):
         super().__init__(crop_size,
                         aug_params,
+                        read_sintel_depth,
                         read_sintel_disparity,
-                        read_sintel_depth)
+                        )
         self.dstype = dstype  # 'clean' or 'final'
         self.base_dir = base_dir
         
@@ -98,7 +107,9 @@ class VideoSintelDataset(VideoSeqDataset):
             
             # 应用数据增强
             if self.augmentor is not None:
+                print("sequence[0].shape, disparities[0].shape(before):", sequence[0][0].shape, disparities[0].shape)
                 sequence, disparities = self.augmentor(sequence, disparities)
+                print("sequence[0].shape, disparities[0].shape(after):", sequence[0][0].shape, disparities[0].shape)
             
             # 转换为所需的格式
             left_seq = np.stack([seq[0] for seq in sequence])   # [T, H, W, 3]
@@ -152,4 +163,3 @@ class VideoSintelDataset(VideoSeqDataset):
 
 if __name__ == '__main__':
     ds = VideoSintelDataset(dstype='clean')
-    print(0)

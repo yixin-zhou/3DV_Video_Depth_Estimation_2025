@@ -24,7 +24,7 @@ from pytorch_lightning.lite import LightningLite
 from torch.cuda.amp import GradScaler
 
 from stereoanyvideo.train_utils.utils import (
-    run_test_eval,
+    # run_test_eval,
     save_ims_to_tb,
     count_parameters,
 )

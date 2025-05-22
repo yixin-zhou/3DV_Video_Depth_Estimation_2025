@@ -135,8 +135,8 @@ class VideoSeqAugmentor:
 
         crop_w, crop_h = self.crop_size
 
-        if np.random.rand() >= self.prob_resize:
-            return seq_copy, disp_copy
+        # if np.random.rand() >= self.prob_resize:
+        #     return seq_copy, disp_copy
 
         min_x_scale = np.log2(crop_w / w)
         min_y_scale = np.log2(crop_h / h)
