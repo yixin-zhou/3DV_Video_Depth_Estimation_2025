@@ -107,9 +107,9 @@ class VideoSintelDataset(VideoSeqDataset):
             
             # 应用数据增强
             if self.augmentor is not None:
-                print("sequence[0].shape, disparities[0].shape(before):", sequence[0][0].shape, disparities[0].shape)
+                # print("sequence[0].shape, disparities[0].shape(before):", sequence[0][0].shape, disparities[0].shape)
                 sequence, disparities = self.augmentor(sequence, disparities)
-                print("sequence[0].shape, disparities[0].shape(after):", sequence[0][0].shape, disparities[0].shape)
+                # print("sequence[0].shape, disparities[0].shape(after):", sequence[0][0].shape, disparities[0].shape)
             
             # 转换为所需的格式
             left_seq = np.stack([seq[0] for seq in sequence])   # [T, H, W, 3]

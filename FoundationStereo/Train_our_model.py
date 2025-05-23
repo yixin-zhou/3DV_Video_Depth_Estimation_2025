@@ -78,7 +78,7 @@ def fetch_dataloader(args, is_train=True):
         dstype=dstype,
         base_dir=base_dir,
         aug_params=aug_params,
-        crop_size=args.crop_size if is_train else None
+        crop_size=args.crop_size # if is_train else None
     )
     
     # 创建数据加载器
@@ -154,7 +154,7 @@ def forward_batch(left_seq, right_seq, disp_seq, model):
     
     # 模型前向传播获取视差预测
     # 输出 disparities 形状为 [B, N, T, H, W]，N 是迭代次数
-    print("left_seq, right_seq:", left_seq.shape, right_seq.shape)
+    # print("left_seq, right_seq:", left_seq.shape, right_seq.shape)
     disparities = model(left_seq, right_seq)
     
     # 计算损失
@@ -365,6 +365,7 @@ class Lite(LightningLite):
                     continue
                 
                 left_seq, right_seq, disp_seq = batch
+                # print("train: ", left_seq.shape)
                 # 将数据移至GPU
                 left_seq = left_seq.cuda()
                 right_seq = right_seq.cuda()
@@ -487,6 +488,7 @@ class Lite(LightningLite):
                     continue
                     
                 left_seq, right_seq, disp_seq = batch
+                # print("val: ", left_seq.shape)
                 # 将数据移至GPU
                 left_seq = left_seq.cuda()
                 right_seq = right_seq.cuda()

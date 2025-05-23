@@ -23,7 +23,7 @@ python FoundationStereo/Train_our_model.py \
   --wdecay 0.00001 \
   --num_epochs 100 \
   --save_epochs 10 \
-  --save_regular_epochs \
+  # --save_regular_epochs \
   --eval_epochs 5 \
   --mixed_precision \
   --ckpt_path ${CKPT_PATH}

@@ -575,7 +575,7 @@ class OurStereo(nn.Module, huggingface_hub.PyTorchModelHubMixin):
         for itr in range(iters):
 
             flow = flow.detach()
-            print("flow:", flow.shape)
+            # print("flow:", flow.shape)
             # out_corrs = self.corr_mlp(comb_volume.permute(0, 1, 3, 4, 2)).permute(0, 1, 4, 2, 3)
             out_corrs = self.corr_mlp(comb_volume.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
             
@@ -590,9 +590,9 @@ class OurStereo(nn.Module, huggingface_hub.PyTorchModelHubMixin):
             # flow_up.detach()
             flow_predictions.append(flow_up[:, :1])  # 只保留水平分量（视差）
             
-        print("flow_predictions:", len(flow_predictions))
-        for i in flow_predictions:
-            print(i.shape)
+        # print("flow_predictions:", len(flow_predictions))
+        # for i in flow_predictions:
+            # print(i.shape)
         
         # 整理所有预测结果
         predictions = torch.stack(flow_predictions)  # [num_predictions, b*T, 1, h, w]
