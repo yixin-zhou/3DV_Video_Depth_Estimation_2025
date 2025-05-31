@@ -57,6 +57,7 @@ class VideoSintelDataset(VideoSeqDataset):
         from tqdm import tqdm  # 进度条
         
         STANDARD_FRAMES = 50  # 统一的帧数
+        BATCHS_PER_SEQ = 2 # 这个数字应整除上个数字
         
         print(f"正在初始化 {self.dstype} 数据集...")
         
@@ -148,9 +149,15 @@ class VideoSintelDataset(VideoSeqDataset):
                 f"处理后的序列帧数不正确: {left_seq.shape[0]}/{right_seq.shape[0]}/{disp_seq.shape[0]} != {STANDARD_FRAMES}"
             
             # 将预处理好的张量添加到样本列表中
-            self.sample_list.append([left_seq, right_seq, disp_seq])
+            left_chunks = torch.tensor_split(left_seq, BATCHS_PER_SEQ, dim=0)
+            right_chunks = torch.tensor_split(right_seq, BATCHS_PER_SEQ, dim=0)
+            disp_chunks = torch.tensor_split(disp_seq, BATCHS_PER_SEQ, dim=0)
+            # self.sample_list.append([left_seq, right_seq, disp_seq])
+            # print("now: ", left_seq.shape, right_seq.shape, disp_seq.shape)
+            for i in range(BATCHS_PER_SEQ):
+                self.sample_list.append([left_chunks[i], right_chunks[i], disp_chunks[i]])
             
-        print(f"数据集初始化完成，共 {len(self.sample_list)} 个序列，每个序列 {STANDARD_FRAMES} 帧。")
+        print(f"数据集初始化完成，共 {len(self.sample_list)} 个序列，每个序列 {STANDARD_FRAMES//BATCHS_PER_SEQ} 帧。")
     
     def __len__(self):
         return len(self.sample_list)
@@ -160,6 +167,9 @@ class VideoSintelDataset(VideoSeqDataset):
         return self.sample_list[index]
 
 
+
+# # 导入 DynamicReplicaDataset
+# from .dynamic_replica_dataset import DynamicReplicaDataset
 
 if __name__ == '__main__':
     ds = VideoSintelDataset(dstype='clean')

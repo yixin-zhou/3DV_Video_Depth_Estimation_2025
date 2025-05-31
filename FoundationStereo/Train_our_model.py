@@ -129,7 +129,7 @@ def compute_loss(predictions, disp_seq):
     """
     
     # 计算加权L1损失
-    loss, metrics = sequence_loss_video(predictions, disp_seq, loss_gamma=0.8)
+    loss, metrics = sequence_loss_video(predictions, disp_seq, loss_gamma=0.9)
     
     return {
         'loss': loss,
@@ -311,38 +311,38 @@ class Lite(LightningLite):
         start_epoch = 0
         total_steps = 0
         
-        # 尝试从目录中加载最新检查点 dqr 这里要根据实际的 checkpoint 路径修改
-        if os.path.exists(args.ckpt_path):
-            folder_ckpts = [
-                f
-                for f in os.listdir(args.ckpt_path)
-                if not os.path.isdir(os.path.join(args.ckpt_path, f)) and f.endswith(".pth") and not "final" in f
-            ]
-            if len(folder_ckpts) > 0:
-                ckpt_path = sorted(folder_ckpts)[-1]
-                ckpt = self.load(os.path.join(args.ckpt_path, ckpt_path))
-                logging.info(f"Loading checkpoint {ckpt_path}")
-                if "model" in ckpt:
-                    model.load_state_dict(ckpt["model"])
-                else:
-                    model.load_state_dict(ckpt)
-                if "epoch" in ckpt:
-                    start_epoch = ckpt["epoch"] + 1
-                    logging.info(f"恢复训练，从epoch {start_epoch}开始")
+        # # 尝试从目录中加载最新检查点 dqr 这里要根据实际的 checkpoint 路径修改
+        # if os.path.exists(args.ckpt_path):
+        #     folder_ckpts = [
+        #         f
+        #         for f in os.listdir(args.ckpt_path)
+        #         if not os.path.isdir(os.path.join(args.ckpt_path, f)) and f.endswith(".pth") and not "final" in f
+        #     ]
+        #     if len(folder_ckpts) > 0:
+        #         ckpt_path = sorted(folder_ckpts)[-1]
+        #         ckpt = self.load(os.path.join(args.ckpt_path, ckpt_path))
+        #         logging.info(f"Loading checkpoint {ckpt_path}")
+        #         if "model" in ckpt:
+        #             model.load_state_dict(ckpt["model"])
+        #         else:
+        #             model.load_state_dict(ckpt)
+        #         if "epoch" in ckpt:
+        #             start_epoch = ckpt["epoch"] + 1
+        #             logging.info(f"恢复训练，从epoch {start_epoch}开始")
 
-        # 如果指定了恢复检查点，从指定路径加载
-        elif args.restore_ckpt is not None:
-            assert args.restore_ckpt.endswith(".pth") or args.restore_ckpt.endswith(".pt")
-            logging.info("Loading checkpoint...")
-            strict = True
+        # # 如果指定了恢复检查点，从指定路径加载
+        # elif args.restore_ckpt is not None:
+        #     assert args.restore_ckpt.endswith(".pth") or args.restore_ckpt.endswith(".pt")
+        #     logging.info("Loading checkpoint...")
+        #     strict = True
 
-            state_dict = self.load(args.restore_ckpt)
-            if "model" in state_dict:
-                state_dict = state_dict["model"]
-            if list(state_dict.keys())[0].startswith("module."):
-                state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
-            model.load_state_dict(state_dict, strict=strict)
-            logging.info(f"Done loading checkpoint")
+        #     state_dict = self.load(args.restore_ckpt)
+        #     if "model" in state_dict:
+        #         state_dict = state_dict["model"]
+        #     if list(state_dict.keys())[0].startswith("module."):
+        #         state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+        #     model.load_state_dict(state_dict, strict=strict)
+        #     logging.info(f"Done loading checkpoint")
             
         # 设置模型和优化器
         model, optimizer = self.setup(model, optimizer)
@@ -553,7 +553,12 @@ if __name__ == "__main__":
 
     # 启动训练 dqr 这里要加并行训练
     # lite = Lite(devices="auto", accelerator="auto", precision=16 if args.mixed_precision else 32)
-    lite = Lite(devices=[0], accelerator="cuda", precision=16 if args.mixed_precision else 32)
+    # ddp_strategy = DDPStrategy(find_unused_parameters=True)
+    lite = Lite(devices=[0],
+                accelerator="cuda", 
+                precision=16 if args.mixed_precision else 32,
+                # strategy=ddp_strategy, # 关键在这里
+                )
     if True:
         path = "/home/shizl/3DV_Video_Depth_Estimation_2025/FoundationStereo/pretrained_models/23-51-11/cfg.yaml"
         cfg = OmegaConf.load(path)

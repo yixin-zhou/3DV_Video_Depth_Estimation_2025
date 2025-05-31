@@ -3,6 +3,7 @@ tmp
 .DS_Store
 *.filepart
 *.pth
+checkpoints
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
