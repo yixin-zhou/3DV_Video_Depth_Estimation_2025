@@ -54,6 +54,14 @@ class Logger:
             self._print_training_status()
             self.running_loss = {}
 
+            # 强制清理TensorBoard缓存
+            if hasattr(self.writer, 'flush'):
+                self.writer.flush()
+
+            # 定期进行垃圾回收
+            import gc
+            gc.collect()
+
     def write_dict(self, results):
         if self.writer is None:
             self.writer = SummaryWriter(log_dir=os.path.join(self.ckpt_path, "runs"))
