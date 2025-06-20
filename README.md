@@ -25,7 +25,21 @@ Depth estimation has long been a fundamental problem in computer vision, with nu
 
 
 ## Quick Start
+---
 
+### Dataset
+
+You can use the following scripts to automatically download and extract datasets:
+
+```bash
+# Download Sintel dataset
+python scripts/download_sintel.py
+
+# Download KITTI Depth dataset
+python scripts/download_kitti_depth.py
+
+# Download Virtual KITTI2 dataset
+python scripts/download_virtual_kitti2.py
 ###  Setup
 
 ```bash
