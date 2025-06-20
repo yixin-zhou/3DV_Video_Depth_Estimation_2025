@@ -50,6 +50,15 @@ bash resume_training_from_best.sh
 
 ### Inference
 
-```bash
+To evaluate the model on different benchmarks, run one of the following:
 
+```bash
+# For KITTI Depth
+python evaluation/evaluate_kitti_depth.py
+
+# For Sintel
+python evaluation/evaluate_sintel.py
+
+# For Virtual KITTI2
+python evaluation/evaluate_virtual_kitti2.py
 ```
