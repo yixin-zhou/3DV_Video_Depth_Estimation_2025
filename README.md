@@ -4,7 +4,7 @@
   <a href="#"><img src="https://img.shields.io/badge/Paper-ComingSoon-lightgrey" alt="Paper PDF"></a>
   <a href="https://github.com/yixin-zhou/3DV_Video_Depth_Estimation_2025"><img src="https://img.shields.io/badge/Code-GitHub-green" alt="GitHub Code"></a>
   <a href="https://bazziprincess.github.io/3DV_Video_Depth_Estimation_2025/"><img src="https://img.shields.io/badge/Project_Page-Live-blue" alt="Project Page"></a>
-  <a href="https://docs.google.com/presentation/d/e/2PACX-1vSpqnjFj72oaubtUzlmMZMxKtOtmZ8zasNSsMiVIkfq71dh14kQmlivHQIKifhmGQ/pub?start=false&loop=false&delayms=3000"><img src="https://img.shields.io/badge/Poster-GoogleSlides-orange" alt="Poster"></a>
+  <a href="https://drive.google.com/file/d/1bQj5nzu0udYlUbuWDGPCmjOIJWrI9yXo/view?usp=sharing"><img src="https://img.shields.io/badge/Poster-GoogleSlides-orange" alt="Poster"></a>
 
   <br><br>
   <strong>Qinrui Deng, Tong Su, Hepeng Fan, Yixin Zhou</strong><br>
