@@ -31,7 +31,7 @@ Depth estimation has long been a fundamental problem in computer vision, with nu
 ```bash
 git clone https://github.com/yixin-zhou/3DV_Video_Depth_Estimation_2025.git
 cd 3DV_Video_Depth_Estimation_2025
-conda create -n vde python=3.8
+conda create -n vde python=3.10
 conda activate vde
 pip install -r requirements.txt
 ```
