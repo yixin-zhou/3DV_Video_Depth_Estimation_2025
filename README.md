@@ -67,4 +67,6 @@ sh run_sintel_disparity_eval.sh
 ```
 
 ### Checkpoints
+```bash
 The URL: https://www.polybox.ethz.ch/index.php/s/gCg7ftZqyGJW8ft
+```
