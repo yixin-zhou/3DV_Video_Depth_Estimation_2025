@@ -2,31 +2,49 @@
 
 export PYTHONPATH=`(cd ../ && pwd)`:`pwd`:$PYTHONPATH
 
-# 设置训练数据集路径
-TRAIN_DATA_PATH="/home/shizl/3DV_Video_Depth_Estimation_2025/data/MPI-Sintel-stereo-training-20150305/training"
-VAL_DATA_PATH="/home/shizl/3DV_Video_Depth_Estimation_2025/data/MPI-Sintel-stereo-training-20150305/val"  # 如果不指定，将使用训练数据集路径
+# 设置离线模式环境变量，避免网络下载
+export TORCH_HOME="/home/shizl/.cache/torch"
+export HF_DATASETS_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
 
-# 设置模型检查点保存路径
-CKPT_PATH="checkpoints/our_stereo"
+# 设置数据路径
+TRAIN_DATA_PATH="/home/shizl/3DV_Video_Depth_Estimation_2025/data/extracted"
+VAL_DATA_PATH="/home/shizl/3DV_Video_Depth_Estimation_2025/data/extracted_val"
 
-# 设置GPU可见设备（如果需要指定GPU）
-export CUDA_VISIBLE_DEVICES=3
+# 设置检查点保存路径
+CKPT_PATH="checkpoints/dynamic_replica_$(date +%Y%m%d_%H%M%S)"
+
+# 创建检查点目录
+mkdir -p ${CKPT_PATH}
+
+echo "训练数据路径: ${TRAIN_DATA_PATH}"
+echo "验证数据路径: ${VAL_DATA_PATH}"
+echo "检查点保存路径: ${CKPT_PATH}"
+
+# 设置GPU可见设备（使用2张空闲GPU进行并行训练）
+export CUDA_VISIBLE_DEVICES=3,4,5
 
 # 训练参数
-python FoundationStereo/Train_our_model.py \
+python FoundationStereo/Train_dynamic_replica.py \
   --train_dataset_path ${TRAIN_DATA_PATH} \
   --val_dataset_path ${VAL_DATA_PATH} \
   --crop_size 256 256 \
   --batch_size 1 \
-  --num_workers 16 \
+  --accumulate_grad_batches 6 \
+  --num_workers 8 \
   --lr 0.00005 \
-  --wdecay 0.002 \
-  --num_epochs 1000 \
-  --save_epochs 10 \
+  --wdecay 0.00001 \
+  --num_epochs 200 \
+  --save_epochs 25 \
   --eval_epochs 5 \
   --mixed_precision \
+  --scheduler cosine \
+  --gradient_clip 0.5 \
+  --early_stopping \
+  --patience 20 \
   --ckpt_path ${CKPT_PATH} \
-  # --save_regular_epochs \
+  --save_regular_epochs \
+  --validate_at_start \
+  --tensorboard
 
-# 取消注释下面的行以恢复训练
-# --restore_ckpt ${CKPT_PATH}/model_epoch_X.pth \
+echo "训练完成！检查点保存在: ${CKPT_PATH}"

@@ -53,13 +53,8 @@ pip install -r requirements.txt
 ###  Training
 
 ```bash
+#Notice: Due to that the checkpoint file is 1.43 GB, you should download the checkpoint from the polybox and put it in the checkpoints folder to restart the training and evaluate.
 bash Train_our_model.sh
-```
-
-### To resume training:
-
-```bash
-bash resume_training_from_best.sh
 ```
 
 ### Inference
@@ -67,12 +62,9 @@ bash resume_training_from_best.sh
 To evaluate the model on different benchmarks, run one of the following:
 
 ```bash
-# For KITTI Depth
-python evaluation/evaluate_kitti_depth.py
-
 # For Sintel
-python evaluation/evaluate_sintel.py
-
-# For Virtual KITTI2
-python evaluation/evaluate_virtual_kitti2.py
+sh run_sintel_disparity_eval.sh
 ```
+
+### Checkpoints
+The URL: https://www.polybox.ethz.ch/index.php/s/gCg7ftZqyGJW8ft
